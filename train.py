@@ -13,20 +13,20 @@ from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 from keras.optimizers import Adam
 
 from util import *
-from model import *
+from net_model import *
 
 
 def train(config):
 
     # ------ check GPU ------ #
-    os.environ['CUDA_VISIBLE_DEVICE'] = config.GPUNUM
-    gpuconfig = tf.ConfigProto()
-    gpuconfig.gpu_options.per_process_gpu_memory_fraction = 0.95
-    gpuconfig.allow_soft_palcement = True
-    gpuconfig.log_device_placement = False
-    sess = tf.Session(config=gpuconfig)
-    KTF.set_session(sess)
-    tf.global_variables_initializer().run(session=sess)
+    os.environ['CUDA_VISIBLE_DEVICES'] = config.GPU_NUM
+    # gpuconfig = tf.ConfigProto()
+    ## gpuconfig.gpu_options.per_process_gpu_memory_fraction = 0.95
+    ## gpuconfig.allow_soft_placement = True
+    # gpuconfig.log_device_placement = False
+    # sess = tf.Session(config=gpuconfig)
+    # KTF.set_session(sess)
+    # tf.global_variables_initializer().run(session=sess)
 
     # ------ random seed ------ #
     np.random.seed(21)
@@ -49,23 +49,26 @@ def train(config):
                                        output_symbol=config.output_symbol)
 
     # ------ build model ------ #
-    model = config.model_name(config.input_patch_shape, config.output_patch_shape)
-    model.compile(optimizer=Adam(lr=config.learing_rate), loss='mse')
+    # model = config.model_name(config.input_patch_shape, config.output_patch_shape)
+    model = vnet(config.input_patch_shape, config.output_patch_shape)
+    model.compile(optimizer=Adam(lr=config.learning_rate), loss='mse')
 
-    model_input_path = '../models/{}'.format(config.output_metrics_name)
+    model_input_path = './models/{}'.format(config.output_metrics_name)
+    if not os.path.exists(model_input_path):
+        os.makedirs(model_input_path)
     model_check_point = ModelCheckpoint(filepath='{}/model_{}.hdf5'.format(model_input_path, '1'),
                                        verbose=1,
                                        monitor='val_loss',
                                        save_best_only=True)
-    tensor_board = TensorBoard(log_dir='../logs/{}/{}'.format(config.output_metrics_name, '1'))
+    tensor_board = TensorBoard(log_dir='./logs/{}/{}'.format(config.output_metrics_name, '1'))
     early_stop = EarlyStopping(monitor='val_loss', patience=50)
     print('ok! ')
-    model.fit_genertator(train_datagenerate,
+    model.fit_generator(train_datagenerate,
                          steps_per_epoch=200,
                          epochs=config.epochs,
                          validation_data=valid_datagenerate,
                          validation_steps=100,
-                         callbacls=[model_check_point, tensor_board, early_stop],
+                         callbacks=[model_check_point, tensor_board, early_stop],
                          verbose=1)
     model.save('{}/model_me_{}.hdf5'.format(model_input_path, '1'))
 
@@ -77,8 +80,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='vnet')
     parser.add_argument('--output_metrics_name', type=str, default='vnet')
     parser.add_argument('--data_read_path', type=str, default='./data/data_read/')
-    parser.add_argument('--data_val_path', type=str, default='./data/data_val')
-    parser.add_argument('--GPU_NUM', type=str, default='0')
+    parser.add_argument('--data_val_path', type=str, default='./data/data_val/')
+    parser.add_argument('--GPU_NUM', type=str, default='1')
 
     # dataset parameters
     parser.add_argument('--input_patch_shape', type=list, default=[64, 64, 64])
@@ -90,7 +93,7 @@ if __name__ == '__main__':
 
     # training hyper-parameters
     parser.add_argument('--learning_rate', type=float, default=1e-4)
-    parser.add_argument('--epoch', type=int, default=100)
+    parser.add_argument('--epochs', type=int, default=100)
 
     # misc
 

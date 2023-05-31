@@ -24,7 +24,8 @@ def data_generate(data, batch_size, input_data_patch_shape, output_data_patch_sh
         batch_Y = []
         for i in range(batch_size):
             temp = np.random.choice(len(data))
-            symbol = random.choice(output_symbol)
+            # symbol = random.choice(output_symbol)
+            symbol = output_symbol
             image_shape = data[temp]['unwrap_images'].shape
 
             random_x = np.random.choice(np.arange(int(input_data_patch_shape[0]/2), image_shape[0]-int(input_data_patch_shape[0]/2)))
@@ -37,9 +38,9 @@ def data_generate(data, batch_size, input_data_patch_shape, output_data_patch_sh
             magitude_image = data[temp]['magnitude_images'][random_x-int(input_data_patch_shape[0]/2):random_x+int(input_data_patch_shape[0]/2),
                           random_y-int(input_data_patch_shape[1]/2):random_y+int(input_data_patch_shape[1]/2),
                           random_z-int(input_data_patch_shape[2]/2):random_z+int(input_data_patch_shape[2]/2)]
-            qsm_image = data[temp][symbol][random_x-int(input_data_patch_shape[0]/2):random_x+int(input_data_patch_shape[0]/2),
-                          random_y-int(input_data_patch_shape[1]/2):random_y+int(input_data_patch_shape[1]/2),
-                          random_z-int(input_data_patch_shape[2]/2):random_z+int(input_data_patch_shape[2]/2)]
+            qsm_image = data[temp][symbol][random_x-int(output_data_patch_shape[0]/2):random_x+int(output_data_patch_shape[0]/2),
+                        random_y-int(output_data_patch_shape[1]/2):random_y+int(output_data_patch_shape[1]/2),
+                        random_z-int(output_data_patch_shape[2]/2):random_z+int(output_data_patch_shape[2]/2)]
 
             batch_X_temp = np.stack([phase_image, magitude_image/32767.], axis=-1)
             batch_Y_temp = np.expand_dims(qsm_image, axis=3)
@@ -56,9 +57,7 @@ def data_predict(model_name, input_data, input_data_patch_shape, output_data_pat
     temp_x, temp_y, temp_z = output_data_patch_shape
     temp_xi, temp_yi, temp_zi = input_data_patch_shape
     temp_px, temp_py, temp_pz = int((temp_xi-temp_x)/2), int((temp_yi-temp_y)/2), int((temp_zi-temp_z)/2)
-    temp_pad_x, temp_pad_y, temp_pad_z = int(np.ceil((temp_X-temp_x)/shift)*shift-(temp_X-temp_x)),
-    int(np.ceil((temp_Y - temp_y) / shift) * shift - (temp_Y - temp_y)),
-    int(np.ceil((temp_Z - temp_z) / shift) * shift - (temp_Z - temp_z))
+    temp_pad_x, temp_pad_y, temp_pad_z = int(np.ceil((temp_X-temp_x)/shift)*shift-(temp_X-temp_x)), int(np.ceil((temp_Y - temp_y) / shift) * shift - (temp_Y - temp_y)),int(np.ceil((temp_Z - temp_z) / shift) * shift - (temp_Z - temp_z))
 
     input_data_pad = np.pad(input_data, ((0, temp_pad_x), (0, temp_pad_y), (0, temp_pad_z)), 'edge')
 
@@ -75,7 +74,7 @@ def data_predict(model_name, input_data, input_data_patch_shape, output_data_pat
             for i in range(num_i):
                 input_data_patch = input_data_pad[shift*i:(shift*i+temp_xi), shift*j:(shift*j+temp_yi), shift*k:(shift*k+temp_zi)]
                 input_data_patch = np.expand_dims(input_data_patch, axis=0)
-                input_data_patch = np.expand_dims(input_data_patch, aixs=-1)
+                input_data_patch = np.expand_dims(input_data_patch, axis=-1)
 
                 output_patch = model_name.predict(input_data_patch)
 
